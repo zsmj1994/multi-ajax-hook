@@ -1,28 +1,20 @@
 const realXhr = "RealXMLHttpRequest"
 let proxy = {
-
-}
-
-
-const proxies = [
-    {
-        open: (args, xhr) => {
-            console.log("array", ...args)
-        },
-        onreadystatechange: (xhr) => {
-            console.log(xhr.status)
+    open: (args, xhr) => {
+        console.log("open", ...args)
+    },
+    onreadystatechange: (xhr) => {
+        console.log("onreadystatechange", xhr.status)
+    },
+    responseText: {
+        getter: (text, xhr) => {
+            const v = JSON.parse(text)
+            if (v.data && v.data["loginTitle"]) {
+                v.data["loginTitle"] = '德玛西亚'
+            }
+            return JSON.stringify(v)
         }
     }
-]
-
-const hooksGetter = (fuc) => {
-    return proxies.filter((p) => {
-        return p[fuc]
-    })
-}
-
-const queueHooks = (fun) => {
-
 }
 
 class ProxyXMLHttpRequest {
@@ -30,16 +22,29 @@ class ProxyXMLHttpRequest {
         this._initXMLHttpRequest()
     }
 
+    _initXMLHttpRequest() {
+        const xhr = new window[realXhr];
+
+        for (let attr in xhr) {
+            const type = typeof xhr[attr]
+
+            if (type === "function") {
+                this[attr] = this.hookFunction(attr);
+            } else {
+                Object.defineProperty(this, attr, {
+                    get: this.getterFactory(attr),
+                    set: this.setterFactory(attr),
+                    enumerable: true
+                })
+            }
+        }
+        this.xhr = xhr;
+    }
+
     hookFunction(fun) {
         return function () {
             const args = [].slice.call(arguments)
-            let b = false
-            hooksGetter(fun).forEach(p => {
-                if (p[fun] && p[fun].call(this, args, this.xhr)) {
-                    b = true;
-                }
-            });
-            if (b) {
+            if (proxy[fun] && proxy[fun].call(this, args, this.xhr)) {
                 return
             }
             return this.xhr[fun].apply(this.xhr, args);
@@ -75,32 +80,6 @@ class ProxyXMLHttpRequest {
                 }
             }
         }
-    }
-
-    static hook(proxy) {
-        proxies.push(proxy)
-    }
-
-    _initXMLHttpRequest() {
-        const xhr = new window[realXhr];
-
-        for (let attr in xhr) {
-            let type = "";
-            try {
-                type = typeof xhr[attr]
-            } catch (e) {
-            }
-            if (type === "function") {
-                this[attr] = this.hookFunction(attr);
-            } else {
-                Object.defineProperty(this, attr, {
-                    get: this.getterFactory(attr),
-                    set: this.setterFactory(attr),
-                    enumerable: true
-                })
-            }
-        }
-        this.xhr = xhr;
     }
 }
 

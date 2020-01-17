@@ -1,4 +1,4 @@
-import { ProxyXMLHttpRequest } from './XMLHttpRequest'
+import { ProxyXMLHttpRequest } from './ProxyXMLHttpRequest'
 
 const realXhr = "RealXMLHttpRequest"
 
