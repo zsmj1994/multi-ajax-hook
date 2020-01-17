@@ -1,28 +1,29 @@
 const realXhr = "RealXMLHttpRequest"
 let handler = {
-    // get: (target, propKey, receiver) => {
-    //     console.log('get', propKey)
-    //     return target[propKey]
-    // },
     // set: (target, propKey, value, receiver) => {
     //     console.log('set', propKey)
     // },
-    // apply: (target, thisArg, argumentsList) => {
-
-    // },
     construct: (target, args) => {
-        const proxyInstance = new target(...args)
+        const proxyInstance = Reflect.construct(target, args);
         return new Proxy(proxyInstance, {
             get: (target, propKey, receiver) => {
                 console.log('get', propKey)
-                const t = Reflect.get(...arguments)
-                return function () {
-                    t(...arguments)
+                const t = Reflect.get(target, propKey)
+                if (typeof t === 'function') {
+                    return function () {
+                        Reflect.apply(t, target, arguments);
+                    }
                 }
+                return t
             },
             set: (target, propKey, value, receiver) => {
                 console.log('set', propKey)
+                return Reflect.set(target, propKey, value)
             },
+            defineProperty(target, key, attribute) {
+                console.log('defineProperty');
+                Reflect.defineProperty(target, key, attribute);
+            }
         })
     }
 }
